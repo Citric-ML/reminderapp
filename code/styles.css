@@ -1,0 +1,105 @@
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f4f4f4;
+  color: #222;
+}
+
+.container {
+  max-width: 420px;
+  margin: 60px auto;
+  padding: 24px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+h1 {
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  resize: none;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: white;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+button.secondary {
+  background: #e0e0e0;
+  color: #222;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+.output {
+  margin-top: 16px;
+  padding: 10px;
+  min-height: 40px;
+  border-radius: 6px;
+  background: #f0f0f0;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.suggestions {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: white;
+  margin-top: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.suggestions div {
+  padding: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.suggestions div:hover {
+  background: #f0f0f0;
+}
+
+.hidden {
+  display: none;
+}
+
+input[type="time"] {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
