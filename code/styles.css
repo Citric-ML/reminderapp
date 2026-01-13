@@ -103,3 +103,82 @@ input[type="time"] {
   font-size: 0.95rem;
 }
 
+/*-------------------*/
+/*CALENDAR PAGE*/
+/*-------------------*/
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  border: 1px solid #ccc;
+  user-select: none;
+}
+
+.calendar-header {
+  background: #f0f0f0;
+  font-weight: 500;
+  text-align: center;
+  padding: 6px;
+  border-bottom: 1px solid #ccc;
+}
+
+.time-label {
+  background: #fafafa;
+  text-align: right;
+  padding: 6px;
+  font-size: 0.8rem;
+  border-right: 1px solid #ccc;
+}
+
+.calendar-cell {
+  border: 1px solid #eee;
+  height: 48px;
+  cursor: pointer;
+}
+
+.calendar-cell {
+  position: relative;
+}
+
+.calendar-block {
+  height: 100%;
+  width: 100%;
+  background: #222;
+  color: white;
+  font-size: 0.75rem;
+  padding: 4px;
+  border-radius: 4px;
+  text-align: center;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 320px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.modal-actions button {
+  flex: 1;
+}
