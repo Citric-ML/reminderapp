@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reminder App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <main class="container">
+    <h1>Reminder App</h1>
+
+    <label for="reminderInput" class="label">
+      Enter reminder here
+    </label>
+    
+    <textarea
+      id="reminderInput"
+      placeholder="Type your reminder..."
+      rows="3"
+    ></textarea>
+    <div id="templateSuggestions" class="suggestions hidden"></div>
+    <button id="setNewTemplate">
+      Set New Template
+    </button>
+    <label for="timeInput" class="label">
+      Select time
+    </label>
+    
+    <input type="time" id="timeInput" />
+    <br>
+    <button id="submitReminder">
+      Submit Reminder
+    </button>
+
+    <button id="fetchLastReminder" class="secondary">
+      Fetch Last Reminder
+    </button>
+
+    <div id="output" class="output">
+      <!-- Future output goes here -->
+    </div>
+    <div id="reminderList" class="reminder-list"></div>
+    <script src="script.js"></script>
+  </main>
+
+</body>
+</html>
