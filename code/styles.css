@@ -146,39 +146,13 @@ input[type="time"] {
   color: white;
   font-size: 0.75rem;
   padding: 4px;
+  position:absolute;
+  top:0;
+  left:0;
   border-radius: 4px;
   text-align: center;
 
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 320px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-
-.modal-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.modal-actions button {
-  flex: 1;
 }
