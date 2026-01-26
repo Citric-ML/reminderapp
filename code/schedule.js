@@ -1,6 +1,6 @@
-//THIS FILE STILL HAS ISSUES! FIX LATER!
-
-//Storage functions
+// -------
+// Storage
+// -------
 function readBlocks() {
   return JSON.parse(localStorage.getItem("blocks")) || [];
 }
@@ -9,16 +9,29 @@ function saveBlocks(blocks) {
   localStorage.setItem("blocks", JSON.stringify(blocks));
 }
 
+// ---------
+// Constants
+// ---------
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const startHour = 8;  // 8 AM
+const startHour = 8;
 const totalHours = 12;
-const CELL_HEIGHT = 48; //match CSS
+const CELL_HEIGHT = 48;
 
 const grid = document.getElementById("calendarGrid");
-const debugOutput = document.getElementById("debugOutput");
 
-// ---- Header Row ----
-grid.appendChild(document.createElement("div")); // empty corner
+// Form elements
+const form = document.getElementById("blockForm");
+const nameInput = document.getElementById("blockName");
+const startInput = document.getElementById("blockStart");
+const endInput = document.getElementById("blockEnd");
+const createBtn = document.getElementById("createBlockBtn");
+
+let pendingCell = null;
+
+// ---------------
+// Grid generation
+// ---------------
+grid.appendChild(document.createElement("div"));
 
 days.forEach(day => {
   const header = document.createElement("div");
@@ -27,195 +40,111 @@ days.forEach(day => {
   grid.appendChild(header);
 });
 
-// ---- Time Rows ----
 for (let hour = 0; hour < totalHours; hour++) {
-  const timeLabel = document.createElement("div");
-  timeLabel.className = "time-label";
-  timeLabel.textContent = formatHour(startHour + hour);
-  grid.appendChild(timeLabel);
+  const label = document.createElement("div");
+  label.className = "time-label";
+  label.textContent = formatHour(startHour + hour);
+  grid.appendChild(label);
 
-  days.forEach((day, dayIndex) => {
+  days.forEach(day => {
     const cell = document.createElement("div");
     cell.className = "calendar-cell";
-
     cell.dataset.day = day;
     cell.dataset.hour = startHour + hour;
-    cell.addEventListener("click", () => {
-      const blocks = readBlocks();
-    
-      const startHour = parseInt(cell.dataset.hour, 10);
-      const day = cell.dataset.day;
-    
-      // Prevent duplicate block
-      const exists = blocks.some(
-        b => b.day === day && hourFromLabel(b.start) === startHour
-      );
-      if (exists) return;
-    
-      const block = {
-        id: Date.now(),
-        day,
-        start: formatHour(startHour),
-        duration: 1,
-        name: "",
-      };
-    
-      blocks.push(block);
-      saveBlocks(blocks);
-      renderBlocks();
-    
-      // Auto-edit newly created block
-      const newBlock = cell.querySelector(".calendar-block");
-      if (newBlock) enableInlineEdit(newBlock);
-    });
     grid.appendChild(cell);
   });
 }
 
-// ---- Helpers ----
-function formatHour(hour) {
-  const suffix = hour >= 12 ? "PM" : "AM";
-  const formatted = hour > 12 ? hour - 12 : hour;
-  return `${formatted}:00 ${suffix}`;
-}
+// ----------------
+// Event delegation
+// ----------------
+grid.addEventListener("click", e => {
+  const cell = e.target.closest(".calendar-cell");
+  if (!cell) return;
 
-function startHourFromCell(cell) {
-  return parseInt(cell.dataset.hour, 10);
-}
-
-function hourFromLabel(label) {
-  const [time, period] = label.split(" ");
-  let hour = parseInt(time.split(":")[0], 10);
-
-  if (period === "PM" && hour !== 12) hour += 12;
-  if (period === "AM" && hour === 12) hour = 0;
-
-  return hour;
-}
-function deleteBlock(blockDiv) {
-  const id = Number(blockDiv.dataset.id);
-  const blocks = readBlocks();
-
-  const updatedBlocks = blocks.filter(b => b.id !== id);
-  saveBlocks(updatedBlocks);
-
-  blockDiv.remove();
-}
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
-function deleteOverlappingBlocks(target) {
-  const blocks = readBlocks();
-  const start = hourFromLabel(target.start);
-  const end = start + target.duration;
-
-  const filtered = blocks.filter(b => {
-    if (b.id === target.id) return true;
-    if (b.day !== target.day) return true;
-
-    const bStart = hourFromLabel(b.start);
-    const bEnd = bStart + (b.duration || 1);
-
-    return bEnd <= start || bStart >= end;
-  });
-
-  saveBlocks(filtered);
-}
-
-
-//------------------------------------------------------
-//Calendar interactivity (set & render blocks)
-//------------------------------------------------------
-
-function enableInlineEdit(blockDiv) {
-  if (blockDiv.isEditing) return;
-  blockDiv.isEditing = true;
+  const day = cell.dataset.day;
+  const hour = Number(cell.dataset.hour);
 
   const blocks = readBlocks();
-  const id = Number(blockDiv.dataset.id);
-  const block = blocks.find(b => b.id === id);
-  if (!block) return;
+  const existing = blocks.find(
+    b => b.day === day && b.startHour === hour
+  );
+  //handles cell creation/deletion
+  if (existing) {
+    saveBlocks(blocks.filter(b => b.id !== existing.id));
+    renderBlocks();
+    return;
+  }
+  pendingCell = { day, hour };
+  openForm(hour);
+});
 
-  blockDiv.textContent = "";
+// ----------
+// Form logic
+// ----------
+function openForm(hour) {
+  form.classList.remove("hidden");
 
-  const nameInput = document.createElement("input");
-  nameInput.type = "text";
-  nameInput.value = block.name;
-  nameInput.placeholder = "Block name";
-
-  const durationInput = document.createElement("input");
-  durationInput.type = "number";
-  durationInput.min = 1;
-
-  const startHour = hourFromLabel(block.start);
-  const maxDuration = 19 - startHour; // up to 7 PM
-  durationInput.max = maxDuration;
-  durationInput.value = block.duration || 1;
-
-  nameInput.style.marginBottom = "4px";
-
-  blockDiv.appendChild(nameInput);
-  blockDiv.appendChild(durationInput);
+  nameInput.value = "";
+  startInput.value = `${String(hour).padStart(2, "0")}:00`;
+  endInput.value = `${String(hour + 1).padStart(2, "0")}:00`;
 
   nameInput.focus();
-
-  function save() {
-    block.name = nameInput.value.trim() || block.name;
-    block.duration = clamp(
-      parseInt(durationInput.value, 10) || 1,
-      1,
-      maxDuration
-    );
-
-    deleteOverlappingBlocks(block);
-    saveBlocks(blocks);
-    blockDiv.isEditing = false;
-    renderBlocks();
-  }
-
-  nameInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") durationInput.focus();
-  });
-
-  durationInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") save();
-    if (e.key === "Escape") renderBlocks();
-  });
-
-  nameInput.addEventListener("blur", () => setTimeout(save, 100));
 }
 
+createBtn.addEventListener("click", () => {
+  if (!pendingCell) return;
+
+  const blocks = readBlocks();
+
+  const startHour = parseInt(startInput.value.split(":")[0], 10);
+  const endHour = parseInt(endInput.value.split(":")[0], 10);
+  const duration = Math.max(1, endHour - startHour);
+
+  blocks.push({
+    id: Date.now(),
+    day: pendingCell.day,
+    startHour,
+    duration,
+    name: nameInput.value.trim() || "Untitled",
+  });
+
+  saveBlocks(blocks);
+  pendingCell = null;
+  form.classList.add("hidden");
+  renderBlocks();
+});
+
+// ---------
+// Rendering
+// ---------
 function renderBlocks() {
   document.querySelectorAll(".calendar-block").forEach(b => b.remove());
 
   const blocks = readBlocks();
 
   blocks.forEach(block => {
-    const startHour = hourFromLabel(block.start);
-
     const cell = document.querySelector(
-      `.calendar-cell[data-day="${block.day}"][data-hour="${startHour}"]`
+      `.calendar-cell[data-day="${block.day}"][data-hour="${block.startHour}"]`
     );
     if (!cell) return;
 
-    const blockDiv = document.createElement("div");
-    blockDiv.className = "calendar-block";
-    blockDiv.dataset.id = block.id;
+    const div = document.createElement("div");
+    div.className = "calendar-block";
+    div.style.height = `${block.duration * CELL_HEIGHT}px`;
+    div.textContent = block.name;
 
-    blockDiv.style.position = "absolute";
-    blockDiv.style.top = "0";
-    blockDiv.style.left = "0";
-    blockDiv.style.height = `${block.duration * CELL_HEIGHT}px`;
-
-    blockDiv.textContent = block.name;
-
-    blockDiv.addEventListener("click", e => {
-      e.stopPropagation();
-      enableInlineEdit(blockDiv);
-    });
-
-    cell.appendChild(blockDiv);
+    cell.appendChild(div);
   });
+}
+
+// -----------------
+// Helper (only one)
+// -----------------
+function formatHour(hour) {
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const h = hour > 12 ? hour - 12 : hour;
+  return `${h}:00 ${suffix}`;
 }
 
 renderBlocks();
