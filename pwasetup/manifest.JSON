@@ -1,0 +1,22 @@
+{
+  "name": "Pallas",
+  "short_name": "Pallas",
+  "description": "A reminder app that lets you track habits and set schedules but with cats :3",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#2b2b2b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
