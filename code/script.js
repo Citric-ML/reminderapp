@@ -1,12 +1,54 @@
-//service worker integration
+// -----------------------------
+// Service Worker + Notifications
+// -----------------------------
+
+let reminderIntervalStarted = false;
+
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/service-worker.js");
+  navigator.serviceWorker
+    .register("/service-worker.js")
+    .then(() => {
+      if (navigator.serviceWorker.controller) {
+        startReminderLoop();
+      } else {
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          startReminderLoop();
+        });
+      }
+    });
 }
+
 async function requestNotificationPermission() {
-  if (!("Notification" in window)) return;
+  if (!("Notification" in window)) return false;
+
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") return false;
 
   const permission = await Notification.requestPermission();
   return permission === "granted";
+}
+
+function sendRemindersToServiceWorker() {
+  if (!navigator.serviceWorker.controller) return;
+
+  const reminders = JSON.parse(localStorage.getItem("database")) || [];
+
+  navigator.serviceWorker.controller.postMessage({
+    type: "CHECK_REMINDERS",
+    reminders
+  });
+}
+
+function startReminderLoop() {
+  if (reminderIntervalStarted) return;
+  reminderIntervalStarted = true;
+
+  requestNotificationPermission().then(granted => {
+    if (!granted) return;
+
+    sendRemindersToServiceWorker();
+    setInterval(sendRemindersToServiceWorker, 60 * 1000);
+  });
 }
 
 //utilities
