@@ -1,3 +1,14 @@
+//service worker integration
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js");
+}
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) return;
+
+  const permission = await Notification.requestPermission();
+  return permission === "granted";
+}
+
 //utilities
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const todayDay = () =>
