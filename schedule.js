@@ -13,8 +13,8 @@ function saveBlocks(blocks) {
 // Constants
 // ---------
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const startHour = 8;
-const totalHours = 12;
+const startHour = 5;
+const totalHours = 16;
 const CELL_HEIGHT = 48;
 
 const grid = document.getElementById("calendarGrid");
