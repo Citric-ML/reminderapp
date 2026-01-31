@@ -51,6 +51,14 @@ function startReminderLoop() {
   });
 }
 
+//notifications button
+document
+  .getElementById("enableNotifications")
+  .addEventListener("click", async () => {
+    const granted = await Notification.requestPermission();
+    console.log("Permission:", granted);
+  });
+
 //utilities
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const todayDay = () =>
