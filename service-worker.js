@@ -23,6 +23,7 @@ self.addEventListener("message", event => {
     const key = `${reminder.id}-${todayISO}`;
 
     if (firedToday.has(key)) return;
+    if (Notification.permission !== "granted") return;
 
     const [h, m] = reminder.time.split(":").map(Number);
     const fireTime = new Date();
@@ -30,13 +31,15 @@ self.addEventListener("message", event => {
 
     // Fire only if current time has passed reminder time
     if (now >= fireTime) {
-      self.registration.showNotification("Pallas Reminder", {
-        body: reminder.text,
-        tag: key,              // prevents OS-level duplicates
-        renotify: false,
-        badge: "/icons/icon-192.png",
-        icon: "/icons/icon-192.png"
-      });
+      event.waitUntil(
+        self.registration.showNotification("Pallas Reminder", {
+          body: reminder.text,
+          tag: key,              // prevents OS-level duplicates
+          renotify: false,
+          badge: "/icons/icon-192.png",
+          icon: "/icons/icon-192.png"
+        });
+      );
 
       firedToday.add(key);
     }
