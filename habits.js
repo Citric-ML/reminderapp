@@ -1,3 +1,25 @@
+//---Utilities---
+const LAST_ACTIVE_KEY = "lastActiveDate";
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function checkForNewDay() {
+  const today = todayISO();
+  const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
+
+  if (lastActive !== today) {
+    // New day detected
+    localStorage.setItem(LAST_ACTIVE_KEY, today);
+    return true;
+  }
+
+  return false;
+}
+
+
+
 // -----------------
 // Storage functions
 // -----------------
@@ -220,5 +242,5 @@ function render() {
   renderDailyTracker();
   renderGraph();
 }
-
+checkForNewDay();
 render();
