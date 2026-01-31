@@ -12,84 +12,56 @@ self.addEventListener("activate", event => {
 const firedToday = new Set();
 
 self.addEventListener("message", event => {
-  const { type, reminders } = event.data || {};
+  console.log("SW received message:", event.data);
 
-  if (type !== "CHECK_REMINDERS" || !Array.isArray(reminders)) return;
-
-  const now = new Date();
-  const todayISO = now.toISOString().slice(0, 10);
-
-  reminders.forEach(reminder => {
-    const key = `${reminder.id}-${todayISO}`;
-
-    if (firedToday.has(key)) return;
-    if (Notification.permission !== "granted") return;
-
-    const [h, m] = reminder.time.split(":").map(Number);
-    const fireTime = new Date();
-    fireTime.setHours(h, m, 0, 0);
-
-    // Fire only if current time has passed reminder time
-    if (now >= fireTime) {
-      event.waitUntil(
-        self.registration.showNotification("Pallas Reminder", {
-          body: reminder.text,
-          tag: key,              // prevents OS-level duplicates
-          renotify: false,
-          badge: "/icons/icon-192.png",
-          icon: "/icons/icon-192.png"
-        });
-      );
-
-      firedToday.add(key);
-    }
-  });
-});
-
-//----------DEBUG----------------
-self.addEventListener("message", event => {
   const data = event.data || {};
 
-  //DEBUG NOTIFICATION
+  // ======================
+  // DEBUG NOTIFICATION
+  // ======================
   if (data.type === "DEBUG_NOTIFY") {
-    if (Notification.permission !== "granted") return;
-
     event.waitUntil(
       self.registration.showNotification("Pallas Debug :3", {
-        body: "If you see this, notifications are working!",
+        body: "This is a test notification.",
         icon: "/icons/icon-192.png",
         badge: "/icons/icon-192.png",
-        tag: "debug-notification"
+        tag: "debug-test"
       })
     );
     return;
   }
 
-  // Existing reminder logic
-  const { type, reminders } = data;
-  if (type !== "CHECK_REMINDERS" || !Array.isArray(reminders)) return;
+  // ======================
+  // REMINDER CHECKING
+  // ======================
+  if (data.type !== "CHECK_REMINDERS" || !Array.isArray(data.reminders)) return;
 
   const now = new Date();
   const todayISO = now.toISOString().slice(0, 10);
 
-  reminders.forEach(reminder => {
+  data.reminders.forEach(reminder => {
     const key = `${reminder.id}-${todayISO}`;
+
     if (firedToday.has(key)) return;
+    if (Notification.permission !== "granted") return;
 
     const [h, m] = reminder.time.split(":").map(Number);
     const fireTime = new Date();
     fireTime.setHours(h, m, 0, 0);
 
-    if (now >= fireTime && Notification.permission === "granted") {
+    if (now >= fireTime) {
       event.waitUntil(
         self.registration.showNotification("Pallas Reminder", {
           body: reminder.text,
           tag: key,
+          renotify: false,
           icon: "/icons/icon-192.png",
           badge: "/icons/icon-192.png"
         })
       );
+
       firedToday.add(key);
     }
   });
 });
+
