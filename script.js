@@ -51,13 +51,42 @@ function startReminderLoop() {
   });
 }
 
-//notifications button
+//notifications buttons
 document
   .getElementById("enableNotifications")
   .addEventListener("click", async () => {
     const granted = await Notification.requestPermission();
     console.log("Permission:", granted);
   });
+const debugBtn = document.getElementById("debugNotifyBtn");
+
+if (debugBtn) {
+  debugBtn.addEventListener("click", async () => {
+    // 1. Request permission INSIDE user gesture (iOS requirement)
+    if (!("Notification" in window)) {
+      alert("Notifications not supported");
+      return;
+    }
+
+    let permission = Notification.permission;
+    if (permission !== "granted") {
+      permission = await Notification.requestPermission();
+    }
+
+    if (permission !== "granted") {
+      alert("Notification permission not granted");
+      return;
+    }
+
+    // 2. Ensure service worker is ready
+    const reg = await navigator.serviceWorker.ready;
+
+    // 3. Send debug message
+    reg.active.postMessage({
+      type: "DEBUG_NOTIFY"
+    });
+  });
+}
 
 //utilities
 const todayISO = () => new Date().toISOString().slice(0, 10);
