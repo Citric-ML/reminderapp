@@ -1,93 +1,3 @@
-// -----------------------------
-// Service Worker + Notifications
-// -----------------------------
-
-let reminderIntervalStarted = false;
-
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker
-    .register("/service-worker.js")
-    .then(() => {
-      if (navigator.serviceWorker.controller) {
-        startReminderLoop();
-      } else {
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-          startReminderLoop();
-        });
-      }
-    });
-}
-
-async function requestNotificationPermission() {
-  if (!("Notification" in window)) return false;
-
-  if (Notification.permission === "granted") return true;
-  if (Notification.permission === "denied") return false;
-
-  const permission = await Notification.requestPermission();
-  return permission === "granted";
-}
-
-function sendRemindersToServiceWorker() {
-  if (!navigator.serviceWorker.controller) return;
-
-  const reminders = JSON.parse(localStorage.getItem("database")) || [];
-
-  navigator.serviceWorker.controller.postMessage({
-    type: "CHECK_REMINDERS",
-    reminders
-  });
-}
-
-function startReminderLoop() {
-  if (reminderIntervalStarted) return;
-  reminderIntervalStarted = true;
-
-  requestNotificationPermission().then(granted => {
-    if (!granted) return;
-
-    sendRemindersToServiceWorker();
-    setInterval(sendRemindersToServiceWorker, 60 * 1000);
-  });
-}
-
-//notifications buttons
-document
-  .getElementById("enableNotifications")
-  .addEventListener("click", async () => {
-    const granted = await Notification.requestPermission();
-    console.log("Permission:", granted);
-  });
-const debugBtn = document.getElementById("debugNotifyBtn");
-
-if (debugBtn) {
-  debugBtn.addEventListener("click", async () => {
-    // 1. Request permission INSIDE user gesture (iOS requirement)
-    if (!("Notification" in window)) {
-      alert("Notifications not supported");
-      return;
-    }
-
-    let permission = Notification.permission;
-    if (permission !== "granted") {
-      permission = await Notification.requestPermission();
-    }
-
-    if (permission !== "granted") {
-      alert("Notification permission not granted");
-      return;
-    }
-
-    // 2. Ensure service worker is ready
-    const reg = await navigator.serviceWorker.ready;
-
-    // 3. Send debug message
-    reg.active.postMessage({
-      type: "DEBUG_NOTIFY"
-    });
-  });
-}
-
 //utilities
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const todayDay = () =>
@@ -98,80 +8,112 @@ function el(tag, text) {
   if (text) e.textContent = text;
   return e;
 }
-//----Load top 3 elements in each data section----
-function loadHabitsPreview() {
-  const container = document.getElementById("habits-output-area");
-  container.innerHTML = "";
 
-  const habits = JSON.parse(localStorage.getItem("habits")) || [];
-  const today = todayISO();
-
-  const pending = habits.filter(h => !h.logs[today]);
-
-  pending.slice(0, 3).forEach(habit => {
-    container.appendChild(el("div", habit.name));
-  });
-
-  if (pending.length > 3) {
-    const more = el("a", "See all →");
-    more.href = "habits.html";
-    container.appendChild(more);
-  }
+//===Today page (pulls from localStorage)===
+function getMinutesUntil(timeStr) {
+  const [h, m] = timeStr.split(":").map(Number);
+  const now = new Date();
+  const t = new Date();
+  t.setHours(h, m, 0, 0);
+  return Math.floor((t - now) / 60000);
 }
 
-function loadRemindersPreview() {
-  const container = document.getElementById("reminder-output-area");
-  container.innerHTML = "";
+function buildTodayFeed() {
+  const feed = [];
 
-  const reminders = JSON.parse(localStorage.getItem("database")) || [];
+  const now = new Date();
+  const todayISO = now.toISOString().slice(0, 10);
+  const todayDay =
+    ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][now.getDay()];
 
-  const sorted = reminders
-    .slice()
-    .sort((a, b) => a.time.localeCompare(b.time));
+  // ---------- Reminders ----------
+  const reminders =
+    JSON.parse(localStorage.getItem("database")) || [];
 
-  sorted.slice(0, 3).forEach(r => {
-    const div = document.createElement("div");
-    div.textContent = `${r.time} — ${r.text}`;
-    container.appendChild(div);
+  reminders.forEach(r => {
+    const mins = getMinutesUntil(r.time);
+    if (mins >= -120) { // show recent + upcoming
+      feed.push({
+        type: "reminder",
+        minutes: mins,
+        label: r.text,
+        time: r.time
+      });
+    }
   });
 
-  if (sorted.length > 3) {
-    const more = document.createElement("a");
-    more.textContent = "See all →";
-    more.href = "reminders.html";
-    container.appendChild(more);
+  // ---------- Habits (not completed today) ----------
+  const habits =
+    JSON.parse(localStorage.getItem("habits")) || [];
+
+  habits.forEach(h => {
+    if (!h.logs || !h.logs[todayISO]) {
+      feed.push({
+        type: "habit",
+        minutes: 9999, // habits float lower
+        label: h.name,
+        time: "Any time today"
+      });
+    }
+  });
+
+  // ---------- Schedule blocks (today) ----------
+  const blocks =
+    JSON.parse(localStorage.getItem("blocks")) || [];
+
+  blocks
+    .filter(b => b.day === todayDay)
+    .forEach(b => {
+      const mins = (b.startHour * 60) - (now.getHours() * 60 + now.getMinutes());
+      feed.push({
+        type: "schedule",
+        minutes: mins,
+        label: b.name,
+        time: `${b.startHour}:00`
+      });
+    });
+
+  // ---------- Sort by urgency ----------
+  feed.sort((a, b) => a.minutes - b.minutes);
+
+  return feed.slice(0, 6); // keep it calm
+}
+
+function renderTodayFeed() {
+  const container = document.getElementById("today-feed");
+  container.innerHTML = "";
+
+  const feed = buildTodayFeed();
+
+  if (feed.length === 0) {
+    container.textContent = "Nothing pressing right now.";
+    return;
   }
+
+  feed.forEach(item => {
+    const el = document.createElement("div");
+    el.className = `today-item ${item.type}`;
+
+    const time =
+      item.minutes < 0
+        ? `${Math.abs(item.minutes)}m overdue`
+        : item.minutes < 60
+        ? `in ${item.minutes}m`
+        : item.time;
+
+    el.innerHTML = `
+      <div class="today-label">${item.label}</div>
+      <div class="today-time">${time}</div>
+    `;
+
+    container.appendChild(el);
+  });
 }
 
 
-function loadSchedulePreview() {
-  const container = document.getElementById("schedule-output-area");
-  container.innerHTML = "";
-
-  const blocks = JSON.parse(localStorage.getItem("blocks")) || [];
-  const today = todayDay();
-
-  const todays = blocks
-    .filter(b => b.day === today)
-    .sort((a, b) => a.startHour - b.startHour);
-
-  todays.slice(0, 3).forEach(b => {
-    container.appendChild(
-      el("div", `${b.startHour}:00 — ${b.name}`)
-    );
-  });
-
-  if (todays.length > 3) {
-    const more = el("a", "See all →");
-    more.href = "schedule.html";
-    container.appendChild(more);
-  }
-}
 //----Rendering data to homepage----
 function renderHome() {
-  loadHabitsPreview();
-  loadRemindersPreview();
-  loadSchedulePreview();
+  renderTodayFeed();
 }
 
 renderHome();
